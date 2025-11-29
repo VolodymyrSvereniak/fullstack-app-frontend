@@ -12,6 +12,7 @@ function App() {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [clientData, setClientData] = useState<Client | null>(null);
   const [tableData, setTableData] = useState<Client[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const API = import.meta.env.VITE_API_URL;
 
@@ -21,6 +22,7 @@ function App() {
         API ? `${API}/api/clients` : "http://localhost:3000/api/clients"
       );
       setTableData(response.data);
+      setIsLoading(false);
     } catch (err: unknown) {
       console.error(`Error fetching clients: ${err}`);
     }
@@ -28,8 +30,12 @@ function App() {
 
   useEffect(() => {
     void fetchClients();
+
+    if (tableData.length > 0) {
+      setIsLoading(false);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isLoading]);
 
   const handleOpen = (mode: Mode, client?: Client | null): void => {
     setClientData(client ?? null);
@@ -73,15 +79,44 @@ function App() {
     }
   };
 
+  const handleStartLoadingBackend = (): void => {
+    setIsLoading(true);
+  };
+
   return (
     <>
       <NavBar onOpen={() => handleOpen("add")} onSearch={setSearchTerm} />
-      <TableList
-        setTableData={setTableData}
-        tableData={tableData}
-        handleOpen={handleOpen}
-        searchTerm={searchTerm}
-      />
+      {tableData.length > 0 ? (
+        <TableList
+          setTableData={setTableData}
+          tableData={tableData}
+          handleOpen={handleOpen}
+          searchTerm={searchTerm}
+        />
+      ) : (
+        <div className="grid place-items-center gap-5">
+          <p>
+            The backend is temporarily offline. Please wake it up to load the
+            data.
+          </p>
+          {!isLoading && (
+            <a
+              className="btn bg-blue-800 hover:bg-blue-700"
+              href="https://fullstack-app-backend-7sy6.onrender.com"
+              target="_blank"
+              onClick={handleStartLoadingBackend}
+            >
+              Activate backend
+            </a>
+          )}
+          {isLoading && (
+            <>
+              <p>Please wait...</p>
+              <span className="loading loading-spinner loading-lg"></span>
+            </>
+          )}
+        </div>
+      )}
       <ModalForm
         isOpen={isOpen}
         OnSubmit={handleSubmit}
